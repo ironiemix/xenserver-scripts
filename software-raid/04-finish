@@ -1,0 +1,17 @@
+#!/bin/bash
+
+. makeraid.conf || exit 1
+
+echo -n "Unmounting changeroot ..."
+umount /mnt/dev
+umount /mnt/sys
+umount /mnt/proc
+umount /mnt
+echo " done."
+sgdisk /dev/sdb --attributes=1:set:2
+sync 
+
+echo "The system reboots now. Be shure to boot from your second/new disk!"
+read n
+
+reboot

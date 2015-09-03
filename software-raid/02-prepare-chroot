@@ -1,0 +1,57 @@
+#!/bin/bash
+
+
+. makeraid.conf || exit 1
+
+MAXPART=$(gdisk -l $SOURCEDISK | tail -n 1 | awk '{print $1}')
+echo "Source disk has $MAXPART partitions"
+
+echo -n "Loading kernel module for raid1..."
+modprobe md_mod
+modprobe raid1
+echo " done."
+
+echo "Erzeuge /dev/md0 aus ${DESTDISK}1..."
+yes|mdadm --create /dev/md0 --level=1 --raid-devices=2 --metadata=0.90 ${DESTDISK}1 missing
+echo "Erzeuge /dev/md1 aus ${DESTDISK}2..."
+yes|mdadm --create /dev/md1 --level=1 --raid-devices=2 --metadata=0.90 ${DESTDISK}2 missing
+if [ $MAXPART -eq 3 ]; then 
+    echo "Erzeuge /dev/md2 aus ${DESTDISK}3..."
+    yes|mdadm --create /dev/md2 --level=1 --raid-devices=2 --metadata=0.90 ${DESTDISK}3 missing
+fi
+
+
+echo -n "Warte 5 Sekunden "
+for i in 1 2 3 4 5; do
+sleep 1
+echo -n "."
+done
+echo " fertig."
+
+echo -n "Kopiere System nach /dev/md0" 
+mkfs.ext3 /dev/md0 > /dev/null 2>&1
+mount /dev/md0 /mnt
+cp -xvR --preserve=all / /mnt
+echo " done."
+
+
+echo -n "Modifying /mnt/etc/fstab... "
+sed -i "s/LABEL=[a-zA-Z\-]*/\/dev\/md0/" /mnt/etc/fstab
+echo " done."
+echo -n "Mounting /dev/ sysfs and proc to changeroot ..."
+mount --bind /dev /mnt/dev
+mount -t sysfs none /mnt/sys
+mount -t proc none /mnt/proc
+echo "  done."
+
+cp makeraid.conf /mnt/
+cp 03-* /mnt/
+
+chroot /mnt /sbin/extlinux --install /boot
+dd if=/mnt/usr/share/syslinux/gptmbr.bin of=$DESTDISK
+
+echo "Now type" 
+echo "   chroot /mnt "
+echo "on the command line and execute part3 of the scripts!"
+
+

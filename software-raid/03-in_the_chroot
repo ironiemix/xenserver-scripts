@@ -1,0 +1,15 @@
+#!/bin/bash
+
+
+. makeraid.conf || exit 1
+
+echo "Saving raid information..."
+mdadm --detail --scan > /etc/mdadm.conf
+echo "Creating initrd..."
+mkinitrd -v -f --theme=/usr/share/splash --without-multipath /boot/initrd-`uname -r`.img `uname -r`
+echo "Fixing root filesystem info in /boot/extlinux.conf"
+sed -i "s/LABEL=[a-zA-Z\-]*/\/dev\/md0/" /boot/extlinux.conf
+echo "Installing extlinux..."
+extlinux --raid -i boot/
+sgdisk /dev/sdb --attributes=1:set:2
+echo "Leaving chroot. Please execute 04-finish to finish the process"

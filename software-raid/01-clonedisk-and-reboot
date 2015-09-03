@@ -1,0 +1,35 @@
+#!/bin/bash
+
+. makeraid.conf || exit 1
+
+MAXPART=$(gdisk -l $SOURCEDISK | tail -n 1 | awk '{print $1}')
+echo "Source disk has $MAXPART partitions"
+
+echo -n "Loading kernel module for raid1..."
+modprobe md_mod
+modprobe raid1
+echo " done."
+
+echo -n "Deleting partition information on destination disk ($DESTDISK)... "
+sgdisk --zap-all $DESTDISK
+sgdisk --mbrtogpt --clear $DESTDISK
+echo "  done."
+
+echo -n "Cloning partition table from $SOURCEDISK to ${DESTDISK}..."
+sgdisk -R$DESTDISK $SOURCEDISK
+echo "  done."
+
+echo "Setting partition id for raid on ${DESTDISK}1 ..."
+sgdisk --typecode=1:fd00 $DESTDISK
+echo "Setting partition id for raid on ${DESTDISK}2 ..."
+sgdisk --typecode=2:fd00 $DESTDISK
+if [ $MAXPART -eq 3 ]; then 
+    echo "Setting partition id for raid on ${DESTDISK}3 ..."
+    sgdisk --typecode=3:fd00 $DESTDISK
+fi
+
+echo "Rebooting to get new partition tables."
+sync
+reboot
+
+

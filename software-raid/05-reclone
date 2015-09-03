@@ -1,0 +1,24 @@
+#!/bin/bash
+
+. makeraid.conf || exit 1
+
+MAXPART=$(gdisk -l $SOURCEDISK | tail -n 1 | awk '{print $1}')
+echo "Destdisk disk has $MAXPART partitions"
+
+echo -n "Cloning partition table from ${DESTDISK} to ${SOURCEDISK}..."
+sgdisk -R$SOURCEDISK $DESTDISK
+sgdisk $SOURCEDISK --attributes=1:set:2
+echo "  done."
+
+echo -n "Warte 5 Sekunden "
+for i in 1 2 3 4 5; do
+sleep 1
+echo -n "."
+done
+echo " fertig."
+
+mdadm -a /dev/md0 ${SOURCEDISK}1
+mdadm -a /dev/md1 ${SOURCEDISK}2
+if [ $MAXPART -eq 3 ]; then 
+    mdadm -a /dev/md2 ${SOURCEDISK}3
+fi
