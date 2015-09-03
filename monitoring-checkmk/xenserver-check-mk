@@ -19,6 +19,24 @@ tar xzf  $SUBDIR/agents.tar.gz
 
 rpm -Uvh check-mk-agent*.noarch.rpm
 
+echo 
+echo "--------------------------------------------"
+echo "SUCCESS: check_mk Agent ist eingerichtet."
+echo 
+echo "Um Anfragen an den Agenten anzunehmen, muss die" 
+echo "Firewall auf Port 6556 für den Monitoring Server"
+echo "geöffnet werden."
+echo 
+echo "Dazu eine Zeile wie die folgende in die Datei"
+echo "/etc/sysconfig/iptables einfügen und die Firewall"
+echo "mit dem Befehl"
+echo "    service iptables restart"
+echo "neu starten."
+echo 
+echo "-A RH-Firewall-1-INPUT -m conntrack --ctstate NEW -m tcp -p tcp --dport 6556 -j ACCEPT"
+echo 
+echo "--------------------------------------------"
+
 
 
 
